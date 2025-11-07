@@ -18,7 +18,10 @@ app.use(express.urlencoded({ extended: true }));
 
 // the routes
 const authRoutes = require('./routes/authRoutes');
+const listingRoutes = require('./routes/listingRoutes');
+app.use('/api/listings', listingRoutes);
 app.use('/api/auth', authRoutes);
+
 
 // checking the health status of api
 app.get('/api/health', (req, res) => {
