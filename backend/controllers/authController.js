@@ -32,7 +32,7 @@ const register = async (req, res) => {
     }
 
     // check if the user already exists
-    const userExists = User.findByEmail(email);
+    const userExists = await User.findOne({ email });
     if (userExists) {
       return res.status(400).json({
         status: 'error',
@@ -45,7 +45,7 @@ const register = async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, salt);
 
     // creating the user
-    const user = User.create({
+    const user = await User.create({
       name,
       email,
       password: hashedPassword
@@ -55,10 +55,10 @@ const register = async (req, res) => {
     res.status(201).json({
       status: 'success',
       data: {
-        id: user.id,
+        id: user._id,
         name: user.name,
         email: user.email,
-        token: generateToken(user.id)
+        token: generateToken(user._id)
       }
     });
   } catch (error) {
@@ -86,7 +86,7 @@ const login = async (req, res) => {
     }
 
     // checking if user exists
-    const user = User.findByEmail(email);
+    const user = await User.findOne({ email });
     if (!user) {
       return res.status(401).json({
         status: 'error',
@@ -107,10 +107,10 @@ const login = async (req, res) => {
     res.status(200).json({
       status: 'success',
       data: {
-        id: user.id,
+        id: user._id,
         name: user.name,
         email: user.email,
-        token: generateToken(user.id)
+        token: generateToken(user._id)
       }
     });
   } catch (error) {
@@ -132,7 +132,7 @@ const getMe = async (req, res) => {
     res.status(200).json({
       status: 'success',
       data: {
-        id: user.id,
+        id: user._id,
         name: user.name,
         email: user.email,
         createdAt: user.createdAt
