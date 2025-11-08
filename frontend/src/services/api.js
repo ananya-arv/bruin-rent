@@ -1,3 +1,4 @@
+// frontend/src/services/api.js
 import axios from 'axios';
 
 // Create axios instance with base URL
@@ -27,6 +28,16 @@ export const authAPI = {
   register: (userData) => api.post('/auth/register', userData),
   login: (credentials) => api.post('/auth/login', credentials),
   getMe: () => api.get('/auth/me')
+};
+
+// Listing API calls
+export const listingAPI = {
+  getAllListings: () => api.get('/listings'),
+  getListing: (id) => api.get(`/listings/${id}`),
+  createListing: (listingData) => api.post('/listings', listingData),
+  updateListing: (id, listingData) => api.put(`/listings/${id}`, listingData),
+  deleteListing: (id) => api.delete(`/listings/${id}`),
+  getMyListings: () => api.get('/listings/my-listings')
 };
 
 export default api;
