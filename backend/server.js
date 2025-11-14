@@ -6,15 +6,18 @@ const connectDB = require('./config/db');
 // loading the environment variables
 dotenv.config();
 
-// Connect to MongoDB
-connectDB();
-
 const app = express();
 
 // the middleware components
-app.use(cors());
+app.use(cors({
+  origin: 'http://localhost:3000',
+  credentials: true
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Connect to MongoDB
+connectDB();
 
 // the routes
 const authRoutes = require('./routes/authRoutes');
