@@ -155,7 +155,7 @@ function App() {
         <div className="auth-header">
             <div className="logo-circle ucla-logo-circle">
             <img
-              src={'${process.env.PUBLIC_URL}/campus-logo.jpg'}
+              src="https://logos-world.net/wp-content/uploads/2021/11/University-of-California-Los-Angeles-UCLA-Emblem.png"
               className="ucla-logo"
               />
           </div>

@@ -52,6 +52,19 @@ code {
   margin-bottom: 1rem;
 }
 
+.ucla-logo-circle {
+  background-color: white; /* White background to show the full-color logo */
+  padding: 0.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.ucla-logo-circle .ucla-logo {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  /* Removed filter to show logo in original colors */
+}
+
 .logo-text {
   font-size: 1.5rem;
   font-weight: bold;
