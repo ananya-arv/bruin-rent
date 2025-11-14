@@ -153,8 +153,11 @@ function App() {
     <div className="auth-container">
       <div className="auth-wrapper">
         <div className="auth-header">
-          <div className="logo-circle">
-            <span className="logo-text">BR</span>
+            <div className="logo-circle ucla-logo-circle">
+            <img
+              src={'${process.env.PUBLIC_URL}/campus-logo.jpg'}
+              className="ucla-logo"
+              />
           </div>
           <h1>BruinRent</h1>
           <p>UCLA Off-Campus Housing Finder</p>
