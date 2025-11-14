@@ -13,14 +13,20 @@ export const useAuth = () => {
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
+  const [isGuest, setIsGuest] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  // Check if user is logged in on mount
+  // check if the user is logged in on the comp.
   useEffect(() => {
     const token = localStorage.getItem('token');
+    const guestMode = localStorage.getItem('guestMode');
+    
     if (token) {
       checkAuth();
+    } else if (guestMode === 'true') {
+      setIsGuest(true);
+      setLoading(false);
     } else {
       setLoading(false);
     }
@@ -30,12 +36,19 @@ export const AuthProvider = ({ children }) => {
     try {
       const response = await authAPI.getMe();
       setUser(response.data.data);
+      setIsGuest(false);
     } catch (err) {
       localStorage.removeItem('token');
       setUser(null);
     } finally {
       setLoading(false);
     }
+  };
+
+  const continueAsGuest = () => {
+    localStorage.setItem('guestMode', 'true');
+    setIsGuest(true);
+    setUser(null);
   };
 
   const register = async (userData) => {
@@ -45,7 +58,9 @@ export const AuthProvider = ({ children }) => {
       const { token, ...userInfo } = response.data.data;
       
       localStorage.setItem('token', token);
+      localStorage.removeItem('guestMode');
       setUser(userInfo);
+      setIsGuest(false);
       return { success: true };
     } catch (err) {
       const errorMessage = err.response?.data?.message || 'Registration failed';
@@ -61,7 +76,9 @@ export const AuthProvider = ({ children }) => {
       const { token, ...userInfo } = response.data.data;
       
       localStorage.setItem('token', token);
+      localStorage.removeItem('guestMode');
       setUser(userInfo);
+      setIsGuest(false);
       return { success: true };
     } catch (err) {
       const errorMessage = err.response?.data?.message || 'Login failed';
@@ -72,17 +89,21 @@ export const AuthProvider = ({ children }) => {
 
   const logout = () => {
     localStorage.removeItem('token');
+    localStorage.removeItem('guestMode');
     setUser(null);
+    setIsGuest(false);
   };
 
   const value = {
     user,
+    isGuest,
     loading,
     error,
     register,
     login,
     logout,
-    isAuthenticated: !!user
+    continueAsGuest,
+    isAuthenticated: !!user || isGuest
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
