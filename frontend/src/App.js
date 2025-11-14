@@ -1,5 +1,5 @@
-// frontend/src/App.js
 import React, { useState } from 'react';
+import { useAuth } from './context/AuthContext';
 import './index.css';
 
 function App() {
@@ -14,6 +14,10 @@ function App() {
   });
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
+  const [successMessage, setSuccessMessage] = useState('');
+
+  // Get auth functions from context
+  const { login, register } = useAuth();
 
   const validateEmail = (email) => {
     const uclaEmailRegex = /^[a-zA-Z0-9._%+-]+@ucla\.edu$/;
@@ -31,8 +35,8 @@ function App() {
 
     if (!formData.password) {
       newErrors.password = 'Password is required';
-    } else if (formData.password.length < 8) {
-      newErrors.password = 'Password must be at least 8 characters';
+    } else if (formData.password.length < 6) {
+      newErrors.password = 'Password must be at least 6 characters';
     }
 
     if (!isLogin) {
@@ -51,7 +55,7 @@ function App() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
     if (!validateForm()) {
@@ -59,12 +63,56 @@ function App() {
     }
 
     setIsLoading(true);
+    setErrors({});
+    setSuccessMessage('');
 
-    setTimeout(() => {
-      console.log(isLogin ? 'Login' : 'Register', formData);
-      alert(`${isLogin ? 'Login' : 'Registration'} successful! Redirecting to dashboard...`);
+    try {
+      let result;
+      
+      if (isLogin) {
+        // Login with Axios
+        result = await login({
+          email: formData.email,
+          password: formData.password
+        });
+      } else {
+        // Register with Axios
+        result = await register({
+          name: formData.name,
+          email: formData.email,
+          password: formData.password
+        });
+      }
+
+      if (result.success) {
+        setSuccessMessage(
+          `${isLogin ? 'Login' : 'Registration'} successful! Welcome to BruinRent.`
+        );
+        
+        // Clear form
+        setFormData({
+          email: '',
+          password: '',
+          name: '',
+          phone: '',
+          confirmPassword: ''
+        });
+
+        // Redirect to dashboard after a short delay
+        setTimeout(() => {
+          // You can add navigation here when you integrate React Router
+          alert('Redirecting to dashboard...');
+        }, 1500);
+      } else {
+        setErrors({ general: result.error || 'An error occurred' });
+      }
+    } catch (error) {
+      setErrors({ 
+        general: error.response?.data?.message || 'An unexpected error occurred' 
+      });
+    } finally {
       setIsLoading(false);
-    }, 1500);
+    }
   };
 
   const handleChange = (e) => {
@@ -79,6 +127,13 @@ function App() {
         [name]: ''
       }));
     }
+    // Clear general error when user starts typing
+    if (errors.general) {
+      setErrors(prev => ({
+        ...prev,
+        general: ''
+      }));
+    }
   };
 
   const switchMode = () => {
@@ -91,6 +146,7 @@ function App() {
       confirmPassword: ''
     });
     setErrors({});
+    setSuccessMessage('');
   };
 
   return (
@@ -112,6 +168,34 @@ function App() {
             </p>
           </div>
 
+          {/* Success Message */}
+          {successMessage && (
+            <div style={{
+              backgroundColor: '#d4edda',
+              color: '#155724',
+              padding: '12px 16px',
+              borderRadius: '8px',
+              marginBottom: '16px',
+              border: '1px solid #c3e6cb'
+            }}>
+              {successMessage}
+            </div>
+          )}
+
+          {/* General Error Message */}
+          {errors.general && (
+            <div style={{
+              backgroundColor: '#f8d7da',
+              color: '#721c24',
+              padding: '12px 16px',
+              borderRadius: '8px',
+              marginBottom: '16px',
+              border: '1px solid #f5c6cb'
+            }}>
+              {errors.general}
+            </div>
+          )}
+
           <form className="auth-form" onSubmit={handleSubmit}>
             {!isLogin && (
               <div className="form-group">
@@ -126,6 +210,7 @@ function App() {
                   onChange={handleChange}
                   className={`form-input ${errors.name ? 'error' : ''}`}
                   placeholder="John Doe"
+                  disabled={isLoading}
                 />
                 {errors.name && (
                   <p className="error-message">{errors.name}</p>
@@ -145,6 +230,7 @@ function App() {
                 onChange={handleChange}
                 className={`form-input ${errors.email ? 'error' : ''}`}
                 placeholder="bruinbear@ucla.edu"
+                disabled={isLoading}
               />
               {errors.email && (
                 <p className="error-message">{errors.email}</p>
@@ -164,6 +250,7 @@ function App() {
                   onChange={handleChange}
                   className="form-input"
                   placeholder="(123) 456-7890"
+                  disabled={isLoading}
                 />
               </div>
             )}
@@ -181,11 +268,13 @@ function App() {
                   onChange={handleChange}
                   className={`form-input ${errors.password ? 'error' : ''}`}
                   placeholder="••••••••"
+                  disabled={isLoading}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
                   className="password-toggle"
+                  disabled={isLoading}
                 >
                   {showPassword ? 'Hide' : 'Show'}
                 </button>
@@ -208,6 +297,7 @@ function App() {
                   onChange={handleChange}
                   className={`form-input ${errors.confirmPassword ? 'error' : ''}`}
                   placeholder="••••••••"
+                  disabled={isLoading}
                 />
                 {errors.confirmPassword && (
                   <p className="error-message">{errors.confirmPassword}</p>
@@ -220,6 +310,7 @@ function App() {
                 <button
                   type="button"
                   className="forgot-password-btn"
+                  disabled={isLoading}
                 >
                   Forgot password?
                 </button>
@@ -241,6 +332,7 @@ function App() {
               <button
                 onClick={switchMode}
                 className="switch-mode-btn"
+                disabled={isLoading}
               >
                 {isLogin ? 'Sign up' : 'Sign in'}
               </button>
