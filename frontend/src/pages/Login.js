@@ -1,9 +1,14 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import './index.css'; 
 
 export default function AuthenticationUI() {
+  const successMessage = new URLSearchParams(window.location.search).get('message');
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
+  const navigate = useNavigate();
+  const { login, register, continueAsGuest } = useAuth();
   const [formData, setFormData] = useState({
     email: '',
     password: '',
@@ -50,7 +55,7 @@ export default function AuthenticationUI() {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
     if (!validateForm()) {
@@ -59,17 +64,33 @@ export default function AuthenticationUI() {
 
     setIsLoading(true);
 
-    // Simulate API call
-    setTimeout(() => {
-      console.log(isLogin ? 'Login' : 'Register', formData);
-      alert(`${isLogin ? 'Login' : 'Registration'} successful! Redirecting to dashboard...`);
-      setIsLoading(false);
-      
-      // Here you would typically:
-      // 1. Make API call to your backend
-      // 2. Store auth token
-      // 3. Redirect to dashboard
-    }, 1500);
+    try {
+    let result;
+    
+    if (isLogin) {
+      result = await login({
+        email: formData.email,
+        password: formData.password
+      });
+    } else {
+      result = await register({
+        name: formData.name,
+        email: formData.email,
+        password: formData.password
+      });
+    }
+    if (result.success) {
+      // Navigate to dashboard on success
+      navigate('/dashboard');
+    } else {
+      alert(result.error || 'An error occurred');
+    }
+  } catch (error) {
+    alert(error.response?.data?.message || 'An unexpected error occurred');
+  } finally {
+    setIsLoading(false);
+  }
+
   };
 
   const handleChange = (e) => {
@@ -99,30 +120,59 @@ export default function AuthenticationUI() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-yellow-50 flex items-center justify-center p-4">
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-full mb-4">
-            <span className="text-2xl font-bold text-white">BR</span>
+    <div className="auth-container">
+      <div className="auth-wrapper">
+        <div className="auth-header">
+            <div className="logo-circle ucla-logo-circle">
+            <img
+              src="https://logos-world.net/wp-content/uploads/2021/11/University-of-California-Los-Angeles-UCLA-Emblem.png"
+              className="ucla-logo"
+              />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">BruinRent</h1>
-          <p className="text-gray-600">UCLA Off-Campus Housing Finder</p>
+          <h1>BruinRent</h1>
+          <p>UCLA Off-Campus Housing Finder</p>
         </div>
 
-        <div className="bg-white rounded-2xl shadow-xl p-8">
-          <div className="mb-6">
-            <h2 className="text-2xl font-bold text-gray-900">
-              {isLogin ? 'Welcome Back' : 'Create Account'}
-            </h2>
-            <p className="text-gray-600 mt-1">
+        <div className="auth-card">
+          <div className="auth-card-header">
+            <h2>{isLogin ? 'Welcome Back' : 'Create Account'}</h2>
+            <p>
               {isLogin ? 'Sign in to find your perfect home' : 'Join the Bruin housing community'}
             </p>
           </div>
 
-          <div className="space-y-4">
+          {/* Success Message */}
+          {successMessage && (
+            <div style={{
+              backgroundColor: '#d4edda',
+              color: '#155724',
+              padding: '12px 16px',
+              borderRadius: '8px',
+              marginBottom: '16px',
+              border: '1px solid #c3e6cb'
+            }}>
+              {successMessage}
+            </div>
+          )}
+
+          {/* General Error Message */}
+          {errors.general && (
+            <div style={{
+              backgroundColor: '#f8d7da',
+              color: '#721c24',
+              padding: '12px 16px',
+              borderRadius: '8px',
+              marginBottom: '16px',
+              border: '1px solid #f5c6cb'
+            }}>
+              {errors.general}
+            </div>
+          )}
+
+          <form className="auth-form" onSubmit={handleSubmit}>
             {!isLogin && (
-              <div>
-                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+              <div className="form-group">
+                <label htmlFor="name" className="form-label">
                   Full Name
                 </label>
                 <input
@@ -131,19 +181,18 @@ export default function AuthenticationUI() {
                   type="text"
                   value={formData.name}
                   onChange={handleChange}
-                  className={`w-full px-4 py-3 border ${
-                    errors.name ? 'border-red-500' : 'border-gray-300'
-                  } rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition`}
+                  className={`form-input ${errors.name ? 'error' : ''}`}
                   placeholder="John Doe"
+                  disabled={isLoading}
                 />
                 {errors.name && (
-                  <p className="mt-1 text-sm text-red-600">{errors.name}</p>
+                  <p className="error-message">{errors.name}</p>
                 )}
               </div>
             )}
 
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">
+            <div className="form-group">
+              <label htmlFor="email" className="form-label">
                 UCLA Email
               </label>
               <input
@@ -152,20 +201,19 @@ export default function AuthenticationUI() {
                 type="email"
                 value={formData.email}
                 onChange={handleChange}
-                className={`w-full px-4 py-3 border ${
-                  errors.email ? 'border-red-500' : 'border-gray-300'
-                } rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition`}
+                className={`form-input ${errors.email ? 'error' : ''}`}
                 placeholder="bruinbear@ucla.edu"
+                disabled={isLoading}
               />
               {errors.email && (
-                <p className="mt-1 text-sm text-red-600">{errors.email}</p>
+                <p className="error-message">{errors.email}</p>
               )}
             </div>
 
             {!isLogin && (
-              <div>
-                <label htmlFor="phone" className="block text-sm font-medium text-gray-700 mb-1">
-                  Phone Number <span className="text-gray-400">(optional)</span>
+              <div className="form-group">
+                <label htmlFor="phone" className="form-label">
+                  Phone Number <span className="optional">(optional)</span>
                 </label>
                 <input
                   id="phone"
@@ -173,44 +221,45 @@ export default function AuthenticationUI() {
                   type="tel"
                   value={formData.phone}
                   onChange={handleChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition"
+                  className="form-input"
                   placeholder="(123) 456-7890"
+                  disabled={isLoading}
                 />
               </div>
             )}
 
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-700 mb-1">
+            <div className="form-group">
+              <label htmlFor="password" className="form-label">
                 Password
               </label>
-              <div className="relative">
+              <div className="password-wrapper">
                 <input
                   id="password"
                   name="password"
                   type={showPassword ? 'text' : 'password'}
                   value={formData.password}
                   onChange={handleChange}
-                  className={`w-full px-4 py-3 pr-12 border ${
-                    errors.password ? 'border-red-500' : 'border-gray-300'
-                  } rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition`}
+                  className={`form-input ${errors.password ? 'error' : ''}`}
                   placeholder="••••••••"
+                  disabled={isLoading}
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 transform -translate-y-1/2 text-sm text-blue-600 hover:text-blue-700 font-medium"
+                  className="password-toggle"
+                  disabled={isLoading}
                 >
                   {showPassword ? 'Hide' : 'Show'}
                 </button>
               </div>
               {errors.password && (
-                <p className="mt-1 text-sm text-red-600">{errors.password}</p>
+                <p className="error-message">{errors.password}</p>
               )}
             </div>
 
             {!isLogin && (
-              <div>
-                <label htmlFor="confirmPassword" className="block text-sm font-medium text-gray-700 mb-1">
+              <div className="form-group">
+                <label htmlFor="confirmPassword" className="form-label">
                   Confirm Password
                 </label>
                 <input
@@ -219,22 +268,22 @@ export default function AuthenticationUI() {
                   type={showPassword ? 'text' : 'password'}
                   value={formData.confirmPassword}
                   onChange={handleChange}
-                  className={`w-full px-4 py-3 border ${
-                    errors.confirmPassword ? 'border-red-500' : 'border-gray-300'
-                  } rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition`}
+                  className={`form-input ${errors.confirmPassword ? 'error' : ''}`}
                   placeholder="••••••••"
+                  disabled={isLoading}
                 />
                 {errors.confirmPassword && (
-                  <p className="mt-1 text-sm text-red-600">{errors.confirmPassword}</p>
+                  <p className="error-message">{errors.confirmPassword}</p>
                 )}
               </div>
             )}
 
             {isLogin && (
-              <div className="flex items-center justify-end">
+              <div className="forgot-password-wrapper">
                 <button
                   type="button"
-                  className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                  className="forgot-password-btn"
+                  disabled={isLoading}
                 >
                   Forgot password?
                 </button>
@@ -242,40 +291,54 @@ export default function AuthenticationUI() {
             )}
 
             <button
-              onClick={handleSubmit}
+              type="submit"
               disabled={isLoading}
-              className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 rounded-lg transition duration-200 disabled:bg-blue-400 disabled:cursor-not-allowed"
+              className="submit-btn"
             >
               {isLoading ? 'Processing...' : isLogin ? 'Sign In' : 'Create Account'}
             </button>
-          </div>
+          </form>
 
-          <div className="mt-6 text-center">
-            <p className="text-gray-600">
+          <div className="switch-mode">
+            <p>
               {isLogin ? "Don't have an account? " : "Already have an account? "}
               <button
                 onClick={switchMode}
-                className="text-blue-600 hover:text-blue-700 font-medium"
+                className="switch-mode-btn"
+                disabled={isLoading}
               >
                 {isLogin ? 'Sign up' : 'Sign in'}
+              </button>
+              {' or '}
+              <button
+                type="button"
+                onClick={() => {
+                  continueAsGuest();
+                  navigate('/dashboard');
+                }}
+                className="switch-mode-btn"
+                disabled={isLoading}
+              >
+                Continue as Guest
               </button>
             </p>
           </div>
 
           {!isLogin && (
-            <p className="mt-4 text-xs text-gray-500 text-center">
+            <p className="terms-text">
               By creating an account, you agree to our{' '}
-              <a href="#" className="text-blue-600 hover:underline">Terms of Service</a>
+              <a href="#">Terms of Service</a>
               {' '}and{' '}
-              <a href="#" className="text-blue-600 hover:underline">Privacy Policy</a>
+              <a href="#">Privacy Policy</a>
             </p>
           )}
         </div>
 
-        <p className="text-center text-gray-500 text-sm mt-6">
+        <p className="auth-footer">
           UCLA verified students only • Secure & trusted
         </p>
       </div>
     </div>
   );
 }
+

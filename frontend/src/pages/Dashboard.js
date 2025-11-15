@@ -6,7 +6,7 @@ import ListingCard from '../components/ListingCard';
 import '../styles/Dashboard.css';
 
 const Dashboard = () => {
-  const { user } = useAuth();
+  const { user, isGuest, logout } = useAuth();
   const navigate = useNavigate();
   const [myListings, setMyListings] = useState([]);
   const [recentListings, setRecentListings] = useState([]);
